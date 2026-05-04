@@ -32,15 +32,15 @@ class ApiClient:
         self.auth_token = response.json()["token"]
         return self.auth_token
 
-    def get_token(self):
-        url = f"{self.base_url}{AUTH}"
-        json_data = {"username": os.getenv("BOOKER_NAME"),
-                     "password": os.getenv("BOOKER_PASSWORD")}
-        response = requests.post(url, json=json_data,
-                                 headers=HEADERS_DATA)
-        response_data = self.response_json_with_status(response)
-        assert "token" in response_data, "Токен не получен"
-        return response_data["token"]
+    # def get_token(self):
+    #     url = f"{self.base_url}{AUTH}"
+    #     json_data = {"username": os.getenv("BOOKER_NAME"),
+    #                  "password": os.getenv("BOOKER_PASSWORD")}
+    #     response = requests.post(url, json=json_data,
+    #                              headers=HEADERS_DATA)
+    #     response_data = self.response_json_with_status(response)
+    #     assert "token" in response_data, "Токен не получен"
+    #     return response_data["token"]
 
     def create_booking(self, booking_data):
         url = f"{BASE_URL}{BOOKING}"
