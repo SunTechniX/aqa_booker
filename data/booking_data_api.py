@@ -1,11 +1,11 @@
 BOOKING_DATA = {
-    "firstname": "Гриша",
-    "lastname": "Сазонов",
-    "totalprice": 2900,
+    "firstname": "Миша",
+    "lastname": "Газонов",
+    "totalprice": 1110,
     "depositpaid": True,
     "bookingdates": {
-        "checkin": "2026-05-05",
-        "checkout": "2026-06-12"
+        "checkin": "2026-05-06",
+        "checkout": "2026-06-14"
     },
     "additionalneeds": "Breakfast"
 }

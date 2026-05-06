@@ -5,11 +5,8 @@ from data.booking_data_api import BOOKING_DATA
 
 class TestsBooker:
 
-    def test_booking_01(self):
-        booker = BookerApi(BASE_URL)
-        booker.login()
+    def test_booking_01(self, booker):
         resp = booker.get(f"{BOOKING}/1")
-        booker.close()
         print(f"{resp=}")
         assert 'firstname' in resp and 'lastname' in resp, \
             "Ответ не содержит имени и фамилии"

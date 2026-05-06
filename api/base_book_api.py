@@ -1,9 +1,8 @@
 import os
 import requests
 from dotenv import load_dotenv
-from selenium.webdriver.common.actions.interaction import NONE
 
-from data.booking_url_api import BASE_URL, AUTH, HEADERS_DATA, BOOKING
+from data.booking_url_api import AUTH, HEADERS_DATA
 
 load_dotenv()
 
