@@ -11,7 +11,8 @@ PET_MAKE = \
   "category": {"id": 1,
                "name": "Dogs"},
   "photoUrls": ["string"],
-  "tags": [{ "id": 0,
-             "name": "string"}],
+  "tags": [{"id": 1, "name": "friendly"},
+           {"id": 2, "name": "trained"},
+           {"id": 3, "name": "Третий"}],
   "status": "available"
 }

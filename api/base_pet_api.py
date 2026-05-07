@@ -24,8 +24,13 @@ class BasePetApi:
         self._check_status_code(response.status_code, expected_status_code)
         return response.json()
 
-    def put(self):
-        pass
+    def put(self, endpoint: str, data_json: dict = None,
+            expected_status_code: int = 200):
+        assert data_json is not None, "Тело не заполнено!"
+        response = requests.put(url=f"{self.base_url}{endpoint}",
+                                json=data_json)
+        self._check_status_code(response.status_code, expected_status_code)
+        return response.json()
 
     def delete(self):
         pass
