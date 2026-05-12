@@ -7,14 +7,25 @@ class TestPostFerify:
         base_url = "https://jsonplaceholder.typicode.com"
         post_data = {
             "userId": 1,
-            "title": "Chain Test",
+            "title": "sed ab est est",
             "body": "Testing API chains"
         }
         create_response = requests.post(f"{base_url}/posts", json=post_data)
         assert create_response.status_code == 201
         post_id = create_response.json()["id"]
         print(f"{create_response.json()=}")
-        # time.sleep(1)
+        get_response_list = requests.get(f"{base_url}/posts")
+        for item in get_response_list.json():
+            # id_ = item["id"]
+            # print(id_, end=" ")
+            # if id_ == post_id:
+            #     print(f"БЫЛО: {post_id}", end=" ")
+            if item["title"] == "non est facere":
+                print(f"БЫЛО: {post_id}", end="\n")
+
+            # print(id_, item["title"])
+        print(f"{post_id=}")
+        post_id = 57
         url = f"{base_url}/posts/{post_id}"
         print(url)
         get_response = requests.get(url)
