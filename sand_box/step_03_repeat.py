@@ -2,7 +2,6 @@ import os
 import pytest
 import requests
 from dotenv import load_dotenv
-from gprof2dot import PRINT_COLORMAP
 
 load_dotenv()
 
@@ -69,4 +68,3 @@ class TestStep_03:
         response = my_sess.put(url, json=BOOKING_DATA_PUT)
         response.raise_for_status()
         print(f"3: {response.json()=}")
-

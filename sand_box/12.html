@@ -1,0 +1,499 @@
+<h1>QA Kit: Автоматизация тестирования GraphQL API</h1>
+
+<p>Ниже &mdash; готовый учебный материал: <strong>принципы тестирования GraphQL</strong> + <strong>полноценный набор автотестов</strong> для вашего сервиса на Strawberry + FastAPI.</p>
+
+<h2>🔍 Часть 1: Как правильно тестировать GraphQL (принципы для SDET)</h2>
+
+<h3>✅ 1. GraphQL &ne; REST: ключевые отличия в тестировании</h3>
+
+<table style="border-collapse: collapse; border: solid 1px" cellpadding="5px">
+	<thead>
+		<tr style="border: 1px solid;">
+			<th style="border: 1px solid;">Аспект</th>
+			<th style="border: 1px solid;">Особенности для тестировщика</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr style="border: 1px solid;">
+			<td><strong>Один эндпоинт</strong></td>
+			<td>Все запросы идут на <code>POST /graphql</code>. Тестируем не URL, а тело запроса (<code>query</code>/<code>mutation</code>).</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td><strong>HTTP 200 при ошибках</strong></td>
+			<td>Сервер почти всегда возвращает <code>200 OK</code>. Ошибки &mdash; в поле <code>errors</code> ответа. Проверяем <strong>и <code>data</code>, и <code>errors</code></strong>.</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td><strong>Строгая схема</strong></td>
+			<td>Контракт описан в SDL. Можно автоматически валидировать запросы, генерировать тесты, проверять совместимость.</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td><strong>Частичные ответы</strong></td>
+			<td>Если одно поле упало с ошибкой, остальные могут вернуться в <code>data</code>. Тестируем сценарии <code>partial success</code>.</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td><strong>Переменные и фрагменты</strong></td>
+			<td>Не хардкодьте значения в query. Используйте <code>variables</code> &mdash; это чище, безопаснее и удобнее для параметризации.</td>
+		</tr>
+	</tbody>
+</table>
+
+<h3>✅ 2. Что покрывать тестами в первую очередь</h3>
+
+<pre>
+<img alt="" height="833" name="mermaid-1778683689062.png" src="https://ucarecdn.stepik.net/fb02a66b-ab4c-4743-96d9-ddb831723389/" width="12213" />
+</pre>
+
+<p>&nbsp;</p>
+
+<h3>✅ 3. Чек-лист тестирования (мини-гайд)</h3>
+
+<ul>
+	<li>Запрос валидируется сервером (синтаксис, типы аргументов)</li>
+	<li><code>HTTP 200</code> + проверка: есть ли <code>errors</code>? соответствует ли <code>data</code> ожидаемой структуре?</li>
+	<li>Запрос несуществующего <code>order(id: 999)</code> &rarr; <code>data.order == null</code>, без <code>errors</code></li>
+	<li><code>create_order</code> возвращает новый <code>id</code> и статус <code>created</code></li>
+	<li><code>change_status</code> разрешает только переходы из <code>ALLOWED_TRANSITIONS</code></li>
+	<li>Недопустимый переход &rarr; <code>errors</code> с понятным сообщением, <code>data.change_status == null</code></li>
+	<li>Повторный <code>create_order</code> с теми же данными &rarr; создаётся новый заказ (не дубликат)</li>
+	<li>Параллельные запросы не ломают консистентность (опционально, нагрузочный тест)</li>
+	<li>Схема не &laquo;утекла&raquo; в продакшен через интроспекцию (если так задумано)</li>
+</ul>
+
+<h2>💻 Часть 2: Автотесты на Python (pytest + requests)</h2>
+
+<h3>📦 Установка зависимостей</h3>
+
+<pre>
+<code>pip install pytest requests python-dotenv</code></pre>
+
+<h3>🗂 Структура тестового проекта</h3>
+
+<pre>
+<code>tests/
+├── conftest.py          # Фикстуры: URL, сессия БД, очистка
+├── test_queries.py      # Тесты на Query: orders, order
+├── test_mutations.py    # Тесты на Mutation: create_order, change_status
+├── test_errors.py       # Негативные сценарии и валидация
+└── utils.py             # Хелперы для GraphQL-запросов</code></pre>
+
+<h3><code>tests/utils.py</code> &mdash; хелпер для отправки запросов&nbsp;🔧</h3>
+
+<pre>
+<code>import requests
+from typing import Optional, Dict, Any
+
+GRAPHQL_URL = "http://localhost:8001/graphql"
+
+def run_graphql(
+    query: str,
+    variables: Optional[Dict[str, Any]] = None,
+    operation_name: Optional[str] = None,
+    url: str = GRAPHQL_URL
+) -&gt; Dict[str, Any]:
+    """Универсальная функция для выполнения GraphQL-запроса."""
+    payload = {"query": query.strip()}
+    if variables:
+        payload["variables"] = variables
+    if operation_name:
+        payload["operationName"] = operation_name
+    
+    response = requests.post(url, json=payload, headers={"Content-Type": "application/json"})
+    response.raise_for_status()  # Выбросит исключение при 4xx/5xx (редко для GraphQL)
+    return response.json()
+
+def assert_graphql_success(response: Dict[str, Any], path: Optional[str] = None):
+    """Проверка, что в ответе нет ошибок и данные на месте."""
+    assert "errors" not in response, f"Unexpected GraphQL errors: {response.get('errors')}"
+    assert "data" in response, "Response missing 'data' field"
+    
+    if path:
+        # Поддержка вложенных путей: "order" или "user.address.city"
+        value = response["data"]
+        for key in path.split("."):
+            assert value is not None, f"Path '{path}' broken at key '{key}': value is None"
+            value = value.get(key)
+        assert value is not None, f"Value at path '{path}' is None"</code></pre>
+
+<h3><code>tests/conftest.py</code> &mdash; фикстуры и подготовка окружения</h3>
+
+<pre>
+<code>import pytest
+import os
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from schema import Base, Order, STATUS_CREATED  # импортируем из исходного кода
+
+# Используем тестовую БД (можно in-memory SQLite для изоляции)
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///./test_qa_kit.db")
+
+@pytest.fixture(scope="session")
+def test_engine():
+    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in TEST_DATABASE_URL else {})
+    Base.metadata.create_all(bind=engine)
+    yield engine
+    Base.metadata.drop_all(bind=engine)  # Очистка после всех тестов
+
+@pytest.fixture
+def db_session(test_engine):
+    """Фикстура с транзакцией: каждый тест работает в изоляции."""
+    TestingSessionLocal = sessionmaker(bind=test_engine)
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+
+@pytest.fixture(autouse=True)
+def cleanup_orders(db_session):
+    """Автоматическая очистка таблицы orders после каждого теста."""
+    yield
+    db_session.query(Order).delete()
+    db_session.commit()
+
+@pytest.fixture
+def sample_order(db_session):
+    """Фабрика тестового заказа."""
+    order = Order(customer="Test User", status=STATUS_CREATED)
+    db_session.add(order)
+    db_session.commit()
+    db_session.refresh(order)
+    return order</code></pre>
+
+<blockquote style="background-color: lightyellow; border: solid 1px;">
+<p>💡 <strong>Совет</strong>: Для полной изоляции тестов можно использовать <code>Testcontainers</code> с реальным PostgreSQL в Docker &mdash; это ближе к продакшену.</p>
+</blockquote>
+
+<h3><code>tests/test_queries.py</code> &mdash; тесты на чтение данных&nbsp;📥</h3>
+
+<pre>
+<code>import pytest
+from utils import run_graphql, assert_graphql_success
+
+class TestOrdersQuery:
+    def test_orders_returns_list(self):
+        query = """
+        query {
+            orders {
+                id
+                customer
+                status
+            }
+        }
+        """
+        response = run_graphql(query)
+        assert_graphql_success(response)
+        assert isinstance(response["data"]["orders"], list)
+
+    def test_orders_empty_when_no_data(self, cleanup_orders):
+        query = "{ orders { id customer status } }"
+        response = run_graphql(query)
+        assert response["data"]["orders"] == []
+
+    def test_order_by_id_found(self, sample_order):
+        query = """
+        query GetOrder($id: Int!) {
+            order(id: $id) {
+                id
+                customer
+                status
+            }
+        }
+        """
+        response = run_graphql(query, variables={"id": sample_order.id})
+        assert_graphql_success(response, path="order")
+        data = response["data"]["order"]
+        assert data["id"] == sample_order.id
+        assert data["customer"] == sample_order.customer
+        assert data["status"] == sample_order.status
+
+    def test_order_by_id_not_found(self):
+        query = "query($id: Int!) { order(id: $id) { id } }"
+        response = run_graphql(query, variables={"id": 99999})
+        assert_graphql_success(response)  # Нет errors, но data.order == null
+        assert response["data"]["order"] is None</code></pre>
+
+<h3><code>tests/test_mutations.py</code> &mdash; тесты на изменение данных&nbsp;✏️</h3>
+
+<pre>
+<code>import pytest
+from utils import run_graphql, assert_graphql_success
+from schema import STATUS_CREATED, STATUS_PAID, STATUS_CANCELLED, STATUS_SHIPPED, STATUS_DELIVERED
+
+class TestCreateOrder:
+    def test_create_order_success(self):
+        mutation = """
+        mutation CreateOrder($customer: String!) {
+            createOrder(customer: $customer) {
+                id
+                customer
+                status
+            }
+        }
+        """
+        response = run_graphql(mutation, variables={"customer": "Alice"})
+        assert_graphql_success(response, path="createOrder")
+        order = response["data"]["createOrder"]
+        assert order["customer"] == "Alice"
+        assert order["status"] == STATUS_CREATED
+        assert isinstance(order["id"], int) and order["id"] &gt; 0
+
+    def test_create_order_required_field_missing(self):
+        mutation = "mutation { createOrder { id } }"  # нет аргумента customer
+        response = run_graphql(mutation)
+        assert "errors" in response
+        assert any("customer" in err["message"].lower() for err in response["errors"])
+
+class TestChangeStatus:
+    @pytest.mark.parametrize("from_status, to_status, should_succeed", [
+        (STATUS_CREATED, STATUS_PAID, True),
+        (STATUS_CREATED, STATUS_CANCELLED, True),
+        (STATUS_PAID, STATUS_SHIPPED, True),
+        (STATUS_PAID, STATUS_CANCELLED, True),
+        (STATUS_SHIPPED, STATUS_DELIVERED, True),
+        (STATUS_CREATED, STATUS_SHIPPED, False),  # пропуск этапа
+        (STATUS_PAID, STATUS_DELIVERED, False),    # нельзя перепрыгнуть
+        (STATUS_DELIVERED, STATUS_CANCELLED, False), # финальный статус
+        (STATUS_CANCELLED, STATUS_PAID, False),    # отменённый нельзя изменить
+    ])
+    def test_status_transitions(self, db_session, from_status, to_status, should_succeed):
+        # Создаём заказ с начальным статусом
+        from schema import Order
+        order = Order(customer="Transition Tester", status=from_status)
+        db_session.add(order)
+        db_session.commit()
+        db_session.refresh(order)
+        
+        mutation = """
+        mutation ChangeStatus($id: Int!, $status: String!) {
+            changeStatus(id: $id, status: $status) {
+                id
+                status
+            }
+        }
+        """
+        response = run_graphql(mutation, variables={"id": order.id, "status": to_status})
+        
+        if should_succeed:
+            assert_graphql_success(response, path="changeStatus")
+            assert response["data"]["changeStatus"]["status"] == to_status
+            # Проверяем, что в БД тоже обновилось
+            db_session.refresh(order)
+            assert order.status == to_status
+        else:
+            assert "errors" in response
+            assert any("cannot change status" in err["message"].lower() for err in response["errors"])
+            # Статус не должен измениться
+            db_session.refresh(order)
+            assert order.status == from_status
+
+    def test_change_status_order_not_found(self):
+        mutation = "mutation($id: Int!, $status: String!) { changeStatus(id: $id, status: $status) { id } }"
+        response = run_graphql(mutation, variables={"id": 99999, "status": "paid"})
+        assert "errors" in response
+        assert any("not found" in err["message"].lower() for err in response["errors"])</code></pre>
+
+<h3><code>tests/test_errors.py</code> &mdash; валидация и краевые случаи&nbsp;⚠️</h3>
+
+<pre>
+<code>from utils import run_graphql
+
+class TestGraphQLErrors:
+    def test_invalid_query_syntax(self):
+        """Сервер должен вернуть синтаксическую ошибку."""
+        query = "query { orders { id customer }"  # пропущена закрывающая скобка
+        response = run_graphql(query)
+        assert "errors" in response
+        assert any("syntax" in err["message"].lower() or "parse" in err["message"].lower() 
+                   for err in response["errors"])
+
+    def test_unknown_field_in_query(self):
+        """Запрос несуществующего поля должен вызвать ошибку валидации."""
+        query = "query { orders { id unknownField123 } }"
+        response = run_graphql(query)
+        assert "errors" in response
+        assert any("unknown field" in err["message"].lower() or "cannot query field" in err["message"].lower()
+                   for err in response["errors"])
+
+    def test_wrong_argument_type(self):
+        """Передача строки вместо Int должно вызвать ошибку типизации."""
+        query = "query { order(id: \"not-an-int\") { id } }"
+        response = run_graphql(query)
+        assert "errors" in response
+        # Strawberry обычно возвращает ошибку валидации аргументов
+        assert any("int" in err["message"].lower() or "cannot coerce" in err["message"].lower()
+                   for err in response["errors"])
+
+    def test_partial_response_with_error(self):
+        """Если в одном поле ошибка, другие поля могут вернуться."""
+        # В нашем примере сложно смоделировать, но принцип важен:
+        # Тестируйте, что при ошибке в одном поле, остальные не "падают" молча.
+        pass  # Можно расширить при добавлении сложных резолверов</code></pre>
+
+<h3>🚀 Запуск тестов</h3>
+
+<pre>
+<code># 1. Убедитесь, что сервис запущен:
+#    uvicorn main:app --reload --port 8001
+
+# 2. Запустите тесты:
+pytest tests/ -v --tb=short
+
+# 3. С покрытием:
+pytest tests/ --cov=schema --cov-report=html
+
+# 4. Только негативные тесты:
+pytest tests/ -k "error or invalid or not_found"</code></pre>
+
+<h2>🎯 Часть 3: Продвинутые практики для SDET</h2>
+
+<h3>🔹 1. Контрактное тестирование схемы</h3>
+
+<pre>
+<code># tests/test_schema_contract.py
+from strawberry.schema import Schema
+from schema import schema as app_schema  # импортируем готовую схему
+
+def test_required_fields_exist():
+    """Проверяем, что обязательные поля схемы на месте."""
+    query_type = app_schema.get_type_by_name("Query")
+    assert query_type is not None
+    
+    # Проверяем, что поле orders возвращает список OrderType
+    orders_field = query_type.fields["orders"]
+    assert orders_field.type is not None  # Упростите под ваш способ интроспекции
+
+def test_deprecated_fields_marked():
+    """Если добавляете @deprecated — тестируйте, что он отражается в схеме."""
+    pass  # Реализуется через интроспекцию __schema</code></pre>
+
+<h3>🔹 2. Интроспекция для автогенерации тестов</h3>
+
+<pre>
+<code># utils/introspection.py
+INTROSPECTION_QUERY = """
+query IntrospectionQuery {
+  __schema {
+    types {
+      name
+      kind
+      fields {
+        name
+        type { name kind ofType { name } }
+        args { name type { name } }
+      }
+    }
+  }
+}
+"""
+# → Парсите ответ и автоматически строите матрицу тестов по всем мутациям</code></pre>
+
+<h3>🔹 3. Нагрузочное тестирование (k6 + GraphQL)</h3>
+
+<pre>
+<code>// load-test/graphql.js
+import http from 'k6/http';
+import { check } from 'k6';
+
+export const options = { vus: 10, duration: '30s' };
+
+export default function () {
+  const query = `query { orders { id customer status } }`;
+  const res = http.post('http://localhost:8001/graphql', 
+    JSON.stringify({ query }),
+    { headers: { 'Content-Type': 'application/json' }}
+  );
+  
+  check(res, {
+    'status is 200': (r) =&gt; r.status === 200,
+    'no graphql errors': (r) =&gt; !r.json('errors'),
+    'response time &lt; 200ms': (r) =&gt; r.timings.duration &lt; 200,
+  });
+}</code></pre>
+
+<p>Запуск: <code>k6 run load-test/graphql.js</code></p>
+
+<h2>📋 Итоговый чек-лист для сдачи задания</h2>
+
+<table style="border-collapse: collapse; border: solid 1px" cellpadding="5px">
+	<thead>
+		<tr style="border: 1px solid;">
+			<th style="border: 1px solid;">Критерий</th>
+			<th style="border: 1px solid;">Как проверить</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr style="border: 1px solid;">
+			<td>✅ Тесты запускаются</td>
+			<td><code>pytest tests/ -v</code> без ошибок импорта</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Покрыты основные сценарии</td>
+			<td>Query (2), Mutation (2), ошибки (3+)</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Используются переменные</td>
+			<td>Нет хардкода аргументов в query-строках</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Проверяется <code>errors</code></td>
+			<td>Ассерты на наличие/отсутствие <code>errors</code> в ответе</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Бизнес-логика протестирована</td>
+			<td>Параметризованные тесты на <code>ALLOWED_TRANSITIONS</code></td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Изоляция тестов</td>
+			<td>Фикстура <code>cleanup_orders</code> или транзакции</td>
+		</tr>
+		<tr style="border: 1px solid;">
+			<td>✅ Читаемость</td>
+			<td>Имена тестов на английском, понятные сообщения об ошибках</td>
+		</tr>
+	</tbody>
+</table>
+
+<h2>🎁 Бонус: Шаблон для расширения</h2>
+
+<p>Хотите добавить новые тесты? Используйте этот шаблон:</p>
+
+<pre>
+<code>def test_&lt;feature&gt;_&lt;scenario&gt;():
+    query = """
+    &lt;OperationType&gt; OperationName($var: Type!) {
+      field(arg: $var) {
+        expected { fields }
+      }
+    }
+    """
+    response = run_graphql(query, variables={"var": "value"})
+    
+    # 1. Проверка на ошибки
+    if expect_error:
+        assert "errors" in response
+        assert &lt;проверка сообщения&gt;
+    else:
+        assert_graphql_success(response, path="&lt;path.to.field&gt;")
+    
+    # 2. Проверка данных
+    result = response["data"]["&lt;field&gt;"]
+    assert result["&lt;subfield&gt;"] == &lt;expected_value&gt;
+    
+    # 3. (Опционально) Проверка в БД
+    # db_session.refresh(entity)
+    # assert entity.field == expected</code></pre>
+
+<blockquote style="background-color: lightyellow; border: solid 1px;">
+<p>💡 <strong>Главный совет</strong>: В GraphQL вы тестируете <strong>контракт и поведение</strong>, а не эндпоинты.<br />
+Фокус на: <strong>схема &rarr; переменные &rarr; ошибки в <code>errors</code> &rarr; бизнес-правила &rarr; частичные ответы</strong>.</p>
+</blockquote>
+
+<p>Если нужно &mdash; могу подготовить:</p>
+
+<ul>
+	<li>Версию тестов с <code>strawberry.test.Client</code> (без HTTP, быстрее)</li>
+	<li>Интеграцию с Allure/ReportPortal</li>
+	<li>Docker Compose для запуска тестов с изолированной БД</li>
+	<li>Генератор тестовых данных на основе интроспекции схемы</li>
+</ul>
