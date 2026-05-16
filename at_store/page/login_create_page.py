@@ -32,6 +32,21 @@ class LoginCreatePage(BasePage):
             "button", name="Continue"
             )
 
+    def get_hidden_input_value(self, name: str) -> str:
+        """ Извлекает значение из hidden input по имени """
+        self.page.wait_for_selector(f"[name='{name}']", state="attached")
+        return self.page.locator(f"[name='{name}']").first.get_attribute("value")
+
+    @property
+    def csrftoken_create(self):
+        return self.get_hidden_input_value("csrftoken")
+        # return self._get_value(self.field_csrftoken_create)
+
+    @property
+    def csrfinstance_create(self):
+        return self.get_hidden_input_value("csrfinstance")
+        # return self._get_value(self.field_csrfinst_create)
+
     def fill_login_create_form(self, data_json: dict = DATA_REGISTER_LOGIN):
         self.field_firstname.fill(data_json["firstname"])
         self.field_lastname.fill(data_json["lastname"])
@@ -47,6 +62,7 @@ class LoginCreatePage(BasePage):
         self.field_country_id.select_option(index=177)  # (label=data_json["country_id"])
 
         # self.field_zone_id.click()
+        self.page.wait_for_timeout(1_000)
         self.field_zone_id.select_option("2795")
         # self.field_zone_id.select_option(index=1)   # (label=data_json["zone_id"])
         # self.field_zone_id.select_option("3607")
