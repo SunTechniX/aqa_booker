@@ -7,7 +7,7 @@ BASE_URL_NO_WWW = "https://www.automationteststore.com"
 
 U_NAME = fake.user_name().replace(" ", "_")
 #U_PASS = fake.password("")
-U_NAME = "mama_f_papa"
+U_NAME = "mama_i_papa"
 U_PASS = "mama_papa"
 
 
