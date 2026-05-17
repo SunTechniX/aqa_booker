@@ -2,6 +2,7 @@ import time
 from playwright.sync_api import APIRequestContext
 
 from at_store.data.data_at_store import BASE_URL
+from at_store.helpers.utils import extract_error_text
 from at_store.tests.test_register_fixed import extract_visible_errors
 
 
@@ -56,21 +57,40 @@ class ApiBaseCtx:
     def close(self):
         pass
 
-    def check_html_for_errors(self):
+    def check_html_for_errors(self, save_html: bool = False):
         """ Ищем ошибки на Web-странице """
-        errors = extract_visible_errors(self.response.text())
-        if errors:
-            print(f"Ошибки сервера:")
-            for e in errors:
-                print(f"   • {e}")
-            with open(f"error_on_web_{self.timestamp}.html", "w", encoding="utf-8") as f:
-                f.write(self.response.text())
-            assert False, f"Registration failed: {errors[0]}"
+        # errors = extract_visible_errors(self.response.text())
+        # if errors:
+        #     print(f"❌ ОШИБКА СЕРВЕРА:")
+        #     for e in errors:
+        #         print(f"   • {e}")
+        #     with open(f"error_on_web_{self.timestamp}.html", "w", encoding="utf-8") as f:
+        #         f.write(self.response.text())
+        #     assert False, f"Registration failed: {errors[0]}"
+        error_text = extract_error_text(self.response.text())
+        if error_text:
+            print(f"❌ ОШИБКА СЕРВЕРА: [[ {error_text} ]]")
+            if save_html:  # Сохраняем HTML для глубокой отладки (если нужно)
+                with open(f"error_on_web_{self.timestamp}.html", "w",
+                          encoding="utf-8") as f:
+                    f.write(self.response.text())
+                print(f"💾 Полный HTML сохранён в error_on_web_{self.timestamp}.html")
+            raise AssertionError(f"Registration failed: [[ {error_text} ]]")
 
-    def check_reg_form(self):
+    def check_reg_form(self, save_html: bool = False):
         """ Если вернулась форма — возможно, тихая ошибка """
         if "AccountFrm" in self.response.text():
-            print("⚠️  Вернулась форма регистрации — сохраняем для анализа")
-            with open(f"error_on_reg_form_{self.timestamp}.html", "w",
-                      encoding="utf-8") as f:
-                f.write(self.response.text())
+            print("⚠️ Вернулась форма регистрации — сохраняем для анализа")
+            if save_html:
+                with open(f"error_on_reg_form_{self.timestamp}.html", "w",
+                          encoding="utf-8") as f:
+                    f.write(self.response.text())
+
+    def check_logined_via_cookie_api(self):
+        """
+        проверка: куки 'customer' - есть
+        - значит авторизация успешна
+        """
+        cookies = self.ctx.cookies()
+        assert any(c['name'] == 'customer' for c in cookies), \
+            "Нет куки 'customer' — логин не прошёл"

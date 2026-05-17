@@ -14,25 +14,31 @@ class ApiStore(ApiBaseCtx):
         endpoint = EP_BASE + EP_USER_CREATE
         # endpoint = BASE_URL + EP_BASE + EP_USER_CREATE
         print(f"🔍 POST-form Create: {endpoint=}")
-        resp = self.post_form(endpoint, data_json=data_json,
-                              expected_status_code=200)  # 302
-        return resp
+        self.response = self.post_form(endpoint, data_json=data_json,
+                                       expected_status_code=200)  # 302
+        return self.response
+
+    def check_open(self, expected_url_part: str = "account/account",
+                   msg: str = "✅ Регистрация успешна! Редирект в ЛК."):
+        if expected_url_part in self.response.url:
+            print(msg)
+            return
 
     def login_open(self):
         endpoint = EP_BASE + EP_USER_LOGIN
         print(f"🔍 GET Open: {endpoint=}")
-        resp = self.get(endpoint, expected_status_code=200)
-        return resp
+        self.response = self.get(endpoint, expected_status_code=200)
+        return self.response
 
     def login_user(self, data_json: dict):
         endpoint = EP_BASE + EP_USER_LOGIN
         print(f"🔍 POST-form Login: {endpoint=}")
-        resp = self.post_form(endpoint, data_json=data_json,
-                              expected_status_code=200)  # 302
-        return resp
+        self.response = self.post_form(endpoint, data_json=data_json,
+                                       expected_status_code=200)  # 302
+        return self.response
 
     def check_user(self):
         endpoint = EP_BASE + EP_USER_SUCCESS
         print(f"🔍 GET Check: {endpoint=}")
-        resp = self.get(endpoint)
-        return resp
+        self.response = self.get(endpoint)
+        return self.response
