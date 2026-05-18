@@ -1,6 +1,8 @@
 from playwright.sync_api import expect
 
-from at_store.data.data_at_store import DATA_REGISTER_LOGIN
+from at_store.api.urls import EP_BASE, EP_USER_CREATE
+from at_store.data.data_at_store import DATA_REGISTER_LOGIN, \
+    DATA_REGISTER_LOGIN_FULL
 from at_store.page.base_page import BasePage
 
 
@@ -32,6 +34,9 @@ class LoginCreatePage(BasePage):
             "button", name="Continue"
             )
 
+    def open(self, url=EP_BASE + EP_USER_CREATE):
+        self.page.goto(url)
+
     def get_hidden_input_value(self, name: str) -> str:
         """ Извлекает значение из hidden input по имени """
         self.page.wait_for_selector(f"[name='{name}']", state="attached")
@@ -47,7 +52,7 @@ class LoginCreatePage(BasePage):
         return self.get_hidden_input_value("csrfinstance")
         # return self._get_value(self.field_csrfinst_create)
 
-    def fill_login_create_form(self, data_json: dict = DATA_REGISTER_LOGIN):
+    def fill_login_create_form(self, data_json: dict = DATA_REGISTER_LOGIN_FULL):
         self.field_firstname.fill(data_json["firstname"])
         self.field_lastname.fill(data_json["lastname"])
         self.field_email.fill(data_json["email"])
@@ -73,6 +78,17 @@ class LoginCreatePage(BasePage):
         # self.page.keyboard.press("ArrowDown")
         # self.page.keyboard.press("Enter")
 
+        self.field_loginname.fill(data_json["loginname"])
+        self.field_password.fill(data_json["password"])
+        self.field_confirm.fill(data_json["confirm"])
+        self.field_newsletter0.click()
+        self.chkbox_agree.check()
+
+    def fill_login_create_form2(self, data_json: dict = DATA_REGISTER_LOGIN):
+        self.field_firstname.fill(data_json["firstname"])
+        self.field_lastname.fill(data_json["lastname"])
+        self.field_email.fill(data_json["email"])
+        self.field_telephone.fill(data_json["telephone"])
         self.field_loginname.fill(data_json["loginname"])
         self.field_password.fill(data_json["password"])
         self.field_confirm.fill(data_json["confirm"])

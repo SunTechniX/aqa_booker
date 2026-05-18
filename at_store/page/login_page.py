@@ -1,3 +1,4 @@
+from at_store.api.urls import EP_BASE, EP_USER_LOGIN
 from at_store.data.data_at_store import DATA_LOGIN
 from at_store.page.base_page import BasePage
 
@@ -12,7 +13,7 @@ class LoginPage(BasePage):
             "button", name="Login"
             )
         self.btn_continue = self.page.get_by_role(
-            "button", name=" Continue"
+            "button", name="Continue"
             )
         # self.field_csrftoken = self.page.locator("[name='csrftoken']")
         # self.field_csrfinst = self.page.locator("[name='csrfinstance']")
@@ -21,13 +22,12 @@ class LoginPage(BasePage):
         self.field_csrftoken_login = self.page.locator("#loginFrm input[name='csrftoken']")
         self.field_csrfinst_login = self.page.locator("#loginFrm input[name='csrfinstance']")
 
+    def open(self, url=EP_BASE + EP_USER_LOGIN):
+        self.page.goto(url)
 
     def fill_login_form(self, data_dict: dict = DATA_LOGIN):
         self.field_name.fill(data_dict["loginname"])
         self.field_pass.fill(data_dict["password"])
-
-    def click_btn_login(self):
-        self.btn_login.click()
 
     def click_btn_login(self):
         self.btn_login.click()

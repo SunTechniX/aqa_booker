@@ -14,7 +14,7 @@ class TestAT:
     @staticmethod
     def interceptor(route):
         if route.request.resource_type not in ("font", "image", "script",
-                                               "stylesheet", "other"):
+                                               "stylesheet", "xhr", "other"):
             print(f"🔍 {route.request.method} {route.request.url} [{route.request.resource_type}]")
             if route.request.resource_type == "document":
                 if hasattr(route.request, "body") and route.request.body:
@@ -41,7 +41,7 @@ class TestAT:
         # Нажали Continue
         at_login.click_btn_continue()
 
-        data_for_register_form = DATA_REGISTER_LOGIN.copy()
+        data_for_register_form = DATA_REGISTER_LOGIN_FULL.copy()
         data_for_login_form = DATA_LOGIN.copy()
 
         api = ApiStore(context)  # ApiStore(driver)
@@ -76,16 +76,14 @@ class TestAT:
         at.page.wait_for_timeout(5_000)
 
     def test_02_create_web_login_api(self, context, page):  # driver
-        # 1. Главная
         at = MainPage(page)
         print()
         at.page.route("**/*", self.interceptor)
         at.open()
         at.click_login()
 
-        # 2. Страница Login
         at_login = LoginPage(page)
-        # Нажали Continue
+        # at_login.check_url("/index.php?rt=account/login")
         at_login.click_btn_continue()
 
         # данные
@@ -95,14 +93,16 @@ class TestAT:
         # 3. Страница формы создания Login-а
         # page.goto("index.php?rt=account/login")
         at_create = LoginCreatePage(page)
+        #at_create.open()
+
         at_create.fill_login_create_form(data_for_register_form)
         at_create.click_btn_continue()
 
-        at_login.page.wait_for_timeout(2_000)
+        at_create.page.wait_for_timeout(2_000)
         # at_login.page.pause()
 
         # 4. Идём логиниться
-        at_login.open("/index.php?rt=account/login")
+        at_login.open()
         at_login.check_url("/index.php?rt=account/login")
 
         tokens = at_login.csrftoken_login
@@ -124,8 +124,8 @@ class TestAT:
 
         page.goto("/index.php?rt=account/account")
 
-        at.page.wait_for_timeout(5_000)
-        at.check_logined_via_cookie()
+        at_login.page.wait_for_timeout(5_000)
+        at_login.check_logined_via_cookie()
 
     def test_03_at_create_api_login_web(self, context, page):  # driver
         # 1. Главная
@@ -160,7 +160,7 @@ class TestAT:
         api = ApiStore(context)
         api.create_user(data_for_register_form)
         # 5. Чекаем ошибки
-        api.check_html_for_errors()
+        api.check_html_for_errors(save_html=True)
         # 6. Проверяем редирект в ЛК
         api.check_open()
         # 7. Если вернулась форма — возможно, тихая ошибка

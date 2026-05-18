@@ -19,5 +19,6 @@ class BasePage:
         - значит авторизация успешна
         """
         cookies = self.page.context.cookies()
+        print(f"{cookies=}")
         assert any(c['name'] == 'customer' for c in cookies), \
             "Нет куки 'customer' — логин не прошёл"

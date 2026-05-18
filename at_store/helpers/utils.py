@@ -1,6 +1,4 @@
 import re
-import time
-from playwright.sync_api import Page
 from bs4 import BeautifulSoup
 
 def load_data(mutable_data: dict,
