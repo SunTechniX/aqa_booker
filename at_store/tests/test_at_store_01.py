@@ -1,5 +1,3 @@
-import time
-
 from at_store.api.store_api import ApiStore
 from at_store.data.data_at_store import DATA_REGISTER_LOGIN, DATA_LOGIN, \
     DATA_REGISTER_LOGIN_FULL
