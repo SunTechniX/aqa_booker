@@ -3,7 +3,7 @@ import time
 from at_store.api.store_api import ApiStore
 from at_store.data.data_at_store import DATA_REGISTER_LOGIN, DATA_LOGIN, \
     DATA_REGISTER_LOGIN_FULL
-from at_store.helpers.utils import load_data, extract_visible_errors
+from at_store.helpers.utils import load_data
 from at_store.page.login_create_page import LoginCreatePage
 from at_store.page.login_page import LoginPage
 from at_store.page.main_page import MainPage
