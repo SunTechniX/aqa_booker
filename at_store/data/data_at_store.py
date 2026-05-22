@@ -3,7 +3,7 @@ from faker import Faker
 fake = Faker()
 
 BASE_URL = "https://www.automationteststore.com"
-BASE_URL_NO_WWW = "https://www.automationteststore.com"
+BASE_URL_NO_WWW = "https://automationteststore.com"
 
 # U_NAME = fake.user_name().replace(" ", "_").lower()
 #U_PASS = fake.password("")
