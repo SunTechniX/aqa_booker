@@ -1,2 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-" Просто Web-логин с имеющимся пользователем ","0","test_01_at_login_simple","at_store.tests","Tue May 26 05:40:40 UTC 2026","broken","Tue May 26 05:40:40 UTC 2026","TestAT","test_at_store_01","",""
