@@ -1,0 +1,6 @@
+
+🔍 GET https://www.automationteststore.com/ [document]
+🔍 GET https://automationteststore.com/index.php?rt=account/login [document]
+🔍 POST https://automationteststore.com/index.php?rt=account/login [document]
+🔍 GET https://www.automationteststore.com/ [document]
+🔍 GET https://www.automationteststore.com/ [document]
