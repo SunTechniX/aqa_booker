@@ -42,13 +42,12 @@ jobs:
           path: allure-results/
           retention-days: 7  # Хранить 7 дней
 
-      - name: Генерируем Allure- отчёт
+      - name: Генерируем Allure-отчёт
         if: always()
-        uses: simple-elf/allure-report-action@master
+        uses: allure-framework/allure-action@main
         with:
           allure_results: allure-results
           allure_report: allure-report
-          history: true  # Сохраняет историю запусков
 
       - name: Публикация отчёта на странице GitHub
         if: always()
