@@ -16,13 +16,16 @@ class TestAT:
             print(f"🔍 {route.request.method} {route.request.url} [{route.request.resource_type}]")
             if route.request.resource_type == "document":
                 if hasattr(route.request, "body") and route.request.body:
-                    print(route.request.body[:50])
+                    print(route.request.body)  # [:50]
                 if hasattr(route.request, "data") and route.request.data:
-                    print(route.request.data[:50])
+                    print(route.request.data)  # [:50]
                 if hasattr(route.request, "form") and route.request.form:
-                    print(route.request.form[:50])
+                    print(route.request.form)  # [:50]
+                if hasattr(route.request, "payload") and route.request.payload:
+                    print(route.request.payload)
                 if "create" in route.request.url:
                     print(route.request.__dict__)
+                    print(route.request.payload)
         route.continue_()
 
     def test_01_at_login_simple(self, context, page):  # driver
@@ -37,24 +40,24 @@ class TestAT:
         # Страница Login
         at_login = LoginPage(page)
         # Нажали Continue
-        at_login.click_btn_continue()
+        # at_login.click_btn_continue()
 
-        data_for_register_form = DATA_REGISTER_LOGIN_FULL.copy()
+        # data_for_register_form = DATA_REGISTER_LOGIN_FULL.copy()
         data_for_login_form = DATA_LOGIN.copy()
 
         api = ApiStore(context)  # ApiStore(driver)
-        tokens = at_login.csrftoken_create
-        instance = at_login.csrfinstance_create
-        load_data(data_for_register_form, tokens, instance)
-        api.create_user(data_for_register_form)  # API Create
-
-        at.page.wait_for_timeout(15_000)
-        at.open()
-
-        at.click_login()
+        # tokens = at_login.csrftoken_create
+        # instance = at_login.csrfinstance_create
+        # load_data(data_for_register_form, tokens, instance)
+        # api.create_user(data_for_register_form)  # API Create
+        #
+        # at.page.wait_for_timeout(15_000)
+        # at.open()
+        #
+        # at.click_login()
         at_login.fill_login_form(data_for_login_form)
         at_login.click_btn_login()
-        at.page.wait_for_timeout(15_000)
+        # at.page.wait_for_timeout(15_000)
 
         # at.click_login()
         # at_reg.click_btn_login()
@@ -71,7 +74,7 @@ class TestAT:
         # api.check_user()
         at.open()
         at.page.reload()
-        at.page.wait_for_timeout(5_000)
+        # at.page.wait_for_timeout(5_000)
 
     def test_02_create_web_login_api(self, context, page):  # driver
         at = MainPage(page)
@@ -94,6 +97,7 @@ class TestAT:
         #at_create.open()
 
         at_create.fill_login_create_form(data_for_register_form)
+        at_create.page.wait_for_timeout(1_000)
         at_create.click_btn_continue()
 
         at_create.page.wait_for_timeout(2_000)
@@ -144,7 +148,7 @@ class TestAT:
         # 3. Страница формы создания Login-а
 
         # данные
-        data_for_register_form = DATA_REGISTER_LOGIN.copy()
+        data_for_register_form = DATA_REGISTER_LOGIN_FULL.copy()
         data_for_login_form = DATA_LOGIN.copy()
 
         at_create = LoginCreatePage(page)

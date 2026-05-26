@@ -1,0 +1,59 @@
+name: Tests AT Store
+
+on:
+  push:
+    branches: [ at_store_ui_api ]
+  workflow_dispatch:  # Ручной запуск
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Копируем код в linux-машину
+        uses: actions/checkout@v4
+
+      - name: Устанавливаем Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Укажите вашу версию
+          cache: 'pip'            # Кэширование pip-пакетов
+
+      - name: Установка зависимостей из requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Установка браузеров Playwright
+        run: playwright install chromium --with-deps
+
+      - name: Запуск тестов со сбором Allure-отчёта
+        run: |
+          pytest at_store/tests/test_at_store_01.py::TestAT::test_01_at_login_simple \
+            --alluredir=allure-results \
+            -v \
+            --tb=short
+
+      - name: Загружаем результаты Allure
+        if: always()  # Сохраняем даже если тесты упали
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ github.run_number }}
+          path: allure-results/
+          retention-days: 7  # Хранить 7 дней
+
+      - name: Генерируем Allure- отчёт
+        if: always()
+        uses: simple-elf/allure-report-action@master
+        with:
+          allure_results: allure-results
+          allure_report: allure-report
+          history: true  # Сохраняет историю запусков
+
+      - name: Публикация отчёта на странице GitHub
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-report
+          destination_dir: reports
