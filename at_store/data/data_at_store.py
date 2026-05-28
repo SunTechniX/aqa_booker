@@ -7,7 +7,7 @@ BASE_URL_NO_WWW = "https://automationteststore.com"
 
 # U_NAME = fake.user_name().replace(" ", "_").lower()
 #U_PASS = fake.password("")
-U_NAME = "mama_mm_papa"
+U_NAME = "mama_pp_papa"
 U_PASS = "mama_papa"
 
 
@@ -28,8 +28,8 @@ DATA_REGISTER_LOGIN = {
 DATA_REGISTER_LOGIN_FULL = {
     "csrftoken": "None",
     "csrfinstance": "0",
-    "firstname": "mama",
-    "lastname": "papa",
+    "firstname": "mama_",
+    "lastname": "papa_",
     "email": fake.email(),
     "telephone": "123456789",
     "company": "AQA Course",

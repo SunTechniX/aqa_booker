@@ -97,4 +97,6 @@ class LoginCreatePage(BasePage):
 
     def click_btn_continue(self):
         expect(self.btn_continue).to_be_visible()
+        expect(self.btn_continue).to_be_enabled()
         self.btn_continue.click()
+        # self.page.wait_for_load_state("networkidle", timeout=10_000)

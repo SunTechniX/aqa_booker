@@ -1,0 +1,70 @@
+name: Tests AT Store
+
+on:
+  push:
+    branches: [ at_store_ui_api ]
+  workflow_dispatch:  # Ручной запуск
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Копируем код в linux-машину
+        uses: actions/checkout@v4
+
+      - name: Устанавливаем Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Укажите вашу версию
+          cache: 'pip'            # Кэширование pip-пакетов
+
+      - name: Установка зависимостей из requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Установка браузеров Playwright
+        run: playwright install chromium --with-deps
+
+      - name: Запуск тестов со сбором результатов Allure [1]
+        run: |
+          pytest at_store/tests/test_at_store_01.py::TestAT::test_01_at_login_simple \
+            --alluredir=allure-results \
+            -v \
+            --tb=short
+
+      - name: 📦 Загружаем результаты Allure [ZIP 1]
+        if: always()  # Сохраняем даже если тесты упали
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results-${{ github.run_number }}
+          path: allure-results/
+          retention-days: 7  # Хранить 7 дней
+
+      - name: Устанавливаем Allure CLI для генерации отчёта
+        run: |
+          wget -q https://github.com/allure-framework/allure2/releases/download/2.41.0/allure-2.41.0.tgz
+          tar -xf allure-2.41.0.tgz -C /tmp/
+          echo "/tmp/allure-2.41.0/bin" >> $GITHUB_PATH
+
+      - name: Генерируем Allure-отчёт [2]
+        run: |
+          allure generate allure-results -o allure-report --clean
+
+      - name: Публикация отчёта на странице GitHub
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: allure-report
+          destination_dir: reports
+
+      - name: 📦 Загружаем отчёт Allure [ZIP 2]
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report-${{ github.run_number }}
+          path: allure-report/
+          retention-days: 2
+          compression-level: 6

@@ -11,7 +11,7 @@ def driver():
 
 @pytest.fixture
 def context(driver):
-    browser: Browser = driver.chromium.launch(headless=False)
+    browser: Browser = driver.chromium.launch(headless=True)
     context = browser.new_context(base_url=BASE_URL)
     yield context
     context.close()
