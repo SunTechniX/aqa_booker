@@ -20,10 +20,10 @@ class BaseBookApi:
         assert code == expected_status_code, \
             f"Ожидали код {expected_status_code}, получили {code}"
 
-    def login(self):
+    def login(self, user_, pass_):
         url = f"{self.base_url}{AUTH}"
-        data_json = {"username": os.getenv("BOOKER_NAME"),
-                     "password": os.getenv("BOOKER_PASSWORD")}
+        data_json = {"username": os.getenv(user_),
+                     "password": os.getenv(pass_)}
         response = self.session.post(url, json=data_json)
                                      # headers=HEADERS_DATA)
         response.raise_for_status()
