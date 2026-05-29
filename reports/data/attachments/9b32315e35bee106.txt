@@ -1,0 +1,1 @@
+INFO     test_at_store_01:test_at_store_01.py:43 Открыли страницу: https://www.automationteststore.com/
