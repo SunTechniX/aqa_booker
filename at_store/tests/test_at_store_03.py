@@ -1,6 +1,10 @@
 from playwright.sync_api import Page
 
 from at_store.data.data_at_store import U_NAME, U_PASS
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 # WORK

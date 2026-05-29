@@ -5,6 +5,10 @@ from at_store.helpers.utils import load_data, extract_visible_errors
 from at_store.page.login_create_page import LoginCreatePage
 from at_store.page.login_page import LoginPage
 from at_store.page.main_page import MainPage
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestAT:
@@ -14,6 +18,7 @@ class TestAT:
         if route.request.resource_type not in ("font", "image", "script",
                                                "stylesheet", "xhr", "other"):
             print(f"🔍 {route.request.method} {route.request.url} [{route.request.resource_type}]")
+            logger.debug(f"Перехват: {route.request.method} {route.request.url}")
             if route.request.resource_type == "document":
                 if hasattr(route.request, "body") and route.request.body:
                     print(route.request.body)  # [:50]
@@ -35,6 +40,7 @@ class TestAT:
         print()
         at.page.route("**/*", self.interceptor)
         at.open()
+        logger.info(f"Открыли страницу: {at.page.url}")
         at.click_login()
 
         # Страница Login
@@ -77,19 +83,29 @@ class TestAT:
         # at.page.wait_for_timeout(5_000)
 
     def test_02_create_web_login_api(self, context, page):  # driver
+        """
+        Тест создания пользователя
+
+        :param context:
+        :param page:
+        :return:
+        """
         at = MainPage(page)
         print()
         at.page.route("**/*", self.interceptor)
         at.open()
+        logger.info(f"Открыли страницу: {at.page.url}")
         at.click_login()
 
         at_login = LoginPage(page)
         # at_login.check_url("/index.php?rt=account/login")
         at_login.click_btn_continue()
+        logger.info(f"Открыли страницу: {at.page.url}")
 
         # данные
         data_for_register_form = DATA_REGISTER_LOGIN_FULL.copy()
         data_for_login_form = DATA_LOGIN.copy()
+        logger.info("Скопировали данные")
 
         # 3. Страница формы создания Login-а
         # page.goto("index.php?rt=account/login")
@@ -97,14 +113,17 @@ class TestAT:
         #at_create.open()
 
         at_create.fill_login_create_form(data_for_register_form)
+        logger.info("Заполнили данные")
         at_create.page.wait_for_timeout(1_000)
         at_create.click_btn_continue()
+        logger.info("Нажали 'Continue'")
 
         at_create.page.wait_for_timeout(2_000)
         # at_login.page.pause()
 
         # 4. Идём логиниться
         at_login.open()
+        logger.info(f"Открыли страницу: {at.page.url}")
         at_login.check_url("/index.php?rt=account/login")
 
         tokens = at_login.csrftoken_login

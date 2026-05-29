@@ -4,6 +4,10 @@ from at_store.api.urls import EP_BASE, EP_USER_CREATE
 from at_store.data.data_at_store import DATA_REGISTER_LOGIN, \
     DATA_REGISTER_LOGIN_FULL
 from at_store.page.base_page import BasePage
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class LoginCreatePage(BasePage):
@@ -96,7 +100,14 @@ class LoginCreatePage(BasePage):
         self.chkbox_agree.check()
 
     def click_btn_continue(self):
-        expect(self.btn_continue).to_be_visible()
-        expect(self.btn_continue).to_be_enabled()
+        # try:
+        #     expect(self.btn_continue).to_be_visible(timeout=5_000)
+        #     expect(self.btn_continue).to_be_enabled(timeout=5_000)
+        # except Exception as e:
+        #     logger.error("Кнопка 'Continue' не активна")
+        #     logger.error(e)
+        #     raise e
+        expect(self.btn_continue).to_be_visible(timeout=5_000)
+        expect(self.btn_continue).to_be_enabled(timeout=5_000)
         self.btn_continue.click()
         # self.page.wait_for_load_state("networkidle", timeout=10_000)

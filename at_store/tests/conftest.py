@@ -1,3 +1,4 @@
+# import logging
 import pytest
 from playwright.sync_api import sync_playwright, Browser
 
@@ -66,3 +67,25 @@ def test_my_account(api_login, page):
     authorized_page = api_login("user@example.com", "pass123")
     assert authorized_page.locator("text=My Account").is_visible()
     # ... дальше тестирование ЛК
+
+
+# class TestFormatter(logging.Formatter):
+#     def format(self, record):
+#         # Добавляем поля из extra в сообщение
+#         if hasattr(record, 'user'):
+#             record.msg = f"[user:{record.user}] {record.msg}"
+#         if hasattr(record, 'test_id'):
+#             record.msg = f"[{record.test_id}] {record.msg}"
+#         return super().format(record)
+#
+#
+# def pytest_configure(config):
+#     handler = logging.StreamHandler()
+#     handler.setFormatter(TestFormatter(
+#         fmt="%(asctime)s [%(levelname)8s] %(name)s:%(lineno)d → %(message)s",
+#         datefmt="%H:%M:%S"
+#         ))
+#
+#     logi = logging.getLogger()
+#     logi.setLevel(logging.INFO)
+#     logi.addHandler(handler)

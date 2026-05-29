@@ -14,6 +14,10 @@ test_register_fixed.py
 import re
 import time
 from playwright.sync_api import Page
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def extract_visible_errors(html: str) -> list[str]:
